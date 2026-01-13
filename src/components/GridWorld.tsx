@@ -3,12 +3,23 @@ import { GridCell } from './GridCell';
 
 interface GridWorldProps {
   grid: Cell[][];
+  previousGrid?: Cell[][] | null;
   showValues: boolean;
   showPolicy: boolean;
+  showDelta?: boolean;
+  selectedCell?: { row: number; col: number } | null;
   onCellClick?: (row: number, col: number) => void;
 }
 
-export function GridWorld({ grid, showValues, showPolicy, onCellClick }: GridWorldProps) {
+export function GridWorld({ 
+  grid, 
+  previousGrid,
+  showValues, 
+  showPolicy, 
+  showDelta = false,
+  selectedCell,
+  onCellClick 
+}: GridWorldProps) {
   // Calculate min and max values for heatmap
   const allValues = grid.flat()
     .filter(cell => cell.type === 'empty')
@@ -32,8 +43,11 @@ export function GridWorld({ grid, showValues, showPolicy, onCellClick }: GridWor
               cell={cell}
               showValues={showValues}
               showPolicy={showPolicy}
+              showDelta={showDelta}
               minValue={minValue}
               maxValue={maxValue}
+              previousValue={previousGrid?.[rowIdx]?.[colIdx]?.value}
+              isSelected={selectedCell?.row === rowIdx && selectedCell?.col === colIdx}
               onClick={() => onCellClick?.(rowIdx, colIdx)}
             />
           ))

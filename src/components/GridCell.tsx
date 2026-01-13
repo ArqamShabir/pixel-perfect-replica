@@ -9,6 +9,9 @@ interface GridCellProps {
   minValue: number;
   maxValue: number;
   onClick?: () => void;
+  previousValue?: number;
+  isSelected?: boolean;
+  showDelta?: boolean;
 }
 
 const PolicyArrow = ({ action }: { action: Action }) => {
@@ -40,7 +43,17 @@ function getValueColor(value: number, minValue: number, maxValue: number): strin
   }
 }
 
-export function GridCell({ cell, showValues, showPolicy, minValue, maxValue, onClick }: GridCellProps) {
+export function GridCell({ 
+  cell, 
+  showValues, 
+  showPolicy, 
+  minValue, 
+  maxValue, 
+  onClick,
+  previousValue,
+  isSelected,
+  showDelta = false,
+}: GridCellProps) {
   const getCellStyle = () => {
     switch (cell.type) {
       case 'goal':
@@ -51,13 +64,7 @@ export function GridCell({ cell, showValues, showPolicy, minValue, maxValue, onC
         return 'bg-muted border-muted-foreground/20';
       default:
         if (showValues && cell.value !== 0) {
-          const normalized = maxValue !== minValue 
-            ? (cell.value - minValue) / (maxValue - minValue) 
-            : 0.5;
-          const hue = 200 - normalized * 200; // Blue (200) to Red (0)
-          const saturation = 70;
-          const lightness = 25 + normalized * 15;
-          return `border-border/50`;
+          return 'border-border/50';
         }
         return 'bg-card border-border/50';
     }
@@ -94,18 +101,33 @@ export function GridCell({ cell, showValues, showPolicy, minValue, maxValue, onC
     }
   };
 
+  const delta = previousValue !== undefined ? cell.value - previousValue : 0;
+  const hasChanged = Math.abs(delta) > 0.0001;
+
   return (
     <div
       onClick={onClick}
       className={cn(
-        'grid-cell aspect-square cursor-pointer',
+        'grid-cell aspect-square cursor-pointer relative',
         'transition-all duration-300 ease-out',
         'hover:scale-105 hover:z-10 hover:shadow-lg hover:shadow-primary/20',
         'rounded-md overflow-hidden',
-        getCellStyle()
+        getCellStyle(),
+        isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-105 z-20',
+        hasChanged && showDelta && 'animate-pulse'
       )}
       style={getValueBackground()}
     >
+      {/* Delta indicator */}
+      {showDelta && hasChanged && cell.type === 'empty' && (
+        <div className={cn(
+          'absolute top-0 left-0 right-0 text-center text-[9px] font-mono py-0.5',
+          delta > 0 ? 'bg-accent/40 text-accent' : 'bg-destructive/40 text-destructive'
+        )}>
+          {delta > 0 ? '+' : ''}{delta.toFixed(3)}
+        </div>
+      )}
+      
       <div className="flex flex-col items-center justify-center w-full h-full p-2">
         {getCellIcon()}
         
@@ -120,7 +142,7 @@ export function GridCell({ cell, showValues, showPolicy, minValue, maxValue, onC
             {showValues && (
               <div className={cn(
                 'value-display absolute bottom-1 right-1',
-                'text-[10px] opacity-80',
+                'text-[10px] opacity-80 font-mono',
                 cell.value >= 0 ? 'text-accent' : 'text-destructive'
               )}>
                 {cell.value.toFixed(2)}
@@ -131,7 +153,7 @@ export function GridCell({ cell, showValues, showPolicy, minValue, maxValue, onC
         
         {(cell.type === 'goal' || cell.type === 'danger') && showValues && (
           <div className={cn(
-            'value-display text-xs mt-1',
+            'value-display text-xs mt-1 font-mono font-bold',
             cell.type === 'goal' ? 'text-accent' : 'text-destructive'
           )}>
             {cell.type === 'goal' ? '+10' : '-10'}
